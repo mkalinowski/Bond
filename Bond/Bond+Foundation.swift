@@ -80,15 +80,17 @@ public func dynamicObservableFor<T>(object: NSObject, #keyPath: String, #default
   let dynamic = InternalDynamic(value)
   
   let helper = DynamicKVOHelper(keyPath: keyPath, object: object as NSObject) {
-    [unowned dynamic] (v: AnyObject) -> Void in
+    [weak dynamic] (v: AnyObject) -> Void in
     
-    dynamic.updatingFromSelf = true
-    if v is NSNull {
-      dynamic.value = defaultValue
-    } else {
-      dynamic.value = (v as? T)!
+    if let dynamic = dynamic {
+        dynamic.updatingFromSelf = true
+        if v is NSNull {
+          dynamic.value = defaultValue
+        } else {
+          dynamic.value = (v as? T)!
+        }
+        dynamic.updatingFromSelf = false
     }
-    dynamic.updatingFromSelf = false
   }
   
   dynamic.retain(helper)
@@ -100,10 +102,12 @@ public func dynamicObservableFor<T>(object: NSObject, #keyPath: String, #from: A
   let dynamic = InternalDynamic(from(keyPathValue))
   
   let helper = DynamicKVOHelper(keyPath: keyPath, object: object as NSObject) {
-    [unowned dynamic] (v: AnyObject?) -> Void in
-    dynamic.updatingFromSelf = true
-    dynamic.value = from(v)
-    dynamic.updatingFromSelf = false
+    [weak dynamic] (v: AnyObject?) -> Void in
+    if let dynamic = dynamic {
+        dynamic.updatingFromSelf = true
+        dynamic.value = from(v)
+        dynamic.updatingFromSelf = false
+    }
   }
   
   let feedbackBond = Bond<T>() { [weak object] value in
@@ -123,10 +127,12 @@ public func dynamicObservableFor<T>(notificationName: String, #object: AnyObject
   let dynamic: InternalDynamic<T> = InternalDynamic()
   
   let helper = DynamicNotificationCenterHelper(notificationName: notificationName, object: object) {
-    [unowned dynamic] notification in
-    dynamic.updatingFromSelf = true
-    dynamic.value = parser(notification)
-    dynamic.updatingFromSelf = false
+    [weak dynamic] notification in
+    if let dynamic = dynamic {
+        dynamic.updatingFromSelf = true
+        dynamic.value = parser(notification)
+        dynamic.updatingFromSelf = false
+    }
   }
   
   dynamic.retain(helper)
